@@ -1,0 +1,24 @@
+{
+  "id": "default",
+  "description": "Default settings",
+  "engineFactory": "org.template.classification.ClassificationEngine",
+  "datasource": {
+    "params": {
+      "appName": "VW"
+    }
+  },
+  "algorithms": [
+    {
+      "name": "VWlogisticSGD",
+      "params": {
+        "maxIter": 100,
+        "regParam": 0.0,
+        "stepSize": 0.1,
+        "bitPrecision": 24,
+        "modelName": "model.vw",
+        "namespace": "n",
+        "maxClasses": 10
+      }
+    }
+  ]
+}
