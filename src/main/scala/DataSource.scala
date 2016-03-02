@@ -7,6 +7,7 @@ import io.prediction.controller.Params
 import io.prediction.data.storage.Event
 import io.prediction.data.store.PEventStore
 import io.prediction.data.storage.DataMap
+import io.prediction.data.storage.PropertyMap
 
 import org.apache.spark.SparkContext
 import org.apache.spark.SparkContext._
@@ -29,16 +30,26 @@ class DataSource(val dsp: DataSourceParams)
   override
   def readTraining(sc: SparkContext): TrainingData = {
 
-  val eventsRDD = PEventStore.find(
+    val testGroupsRDD = PEventStore.aggregateProperties(
+      appName = dsp.appName,
+      entityType = "testGroup")(sc)   
+
+
+    val usersRDD = PEventStore.aggregateProperties(
+      appName = dsp.appName,
+      entityType = "visitor")(sc)
+
+
+    val eventsRDD = PEventStore.find(
       appName = dsp.appName,
       entityType = Some("visitor"),
       targetEntityType = Some(Some("variant")))(sc)
 
-      val examples: RDD[VisitorVariantExample] = eventsRDD.map{ event =>
+    val examples: RDD[VisitorVariantExample] = eventsRDD.map{ event =>
         new VisitorVariantExample(event.properties.get[Boolean]("converted"), event.entityId, event.targetEntityId.getOrElse(throw new RuntimeException), event.properties.get[String]("testGroupId"), event.properties -- List("converted", "testGroupId"))
       }.cache()
 
-    new TrainingData(examples)
+    new TrainingData(examples, usersRDD, testGroupsRDD)
   }
 
   //TODO: remove
@@ -53,5 +64,7 @@ class DataSource(val dsp: DataSourceParams)
 class VisitorVariantExample ( val converted: Boolean, val visitor: String, val variant: String, val testGroupId: String, val props: DataMap ) extends Serializable
 
 class TrainingData(
-  val trainingExamples: RDD[VisitorVariantExample]
+  val trainingExamples: RDD[VisitorVariantExample],
+  val users: RDD[(String, PropertyMap)],
+  val testGroups: RDD[(String, PropertyMap)]
 ) extends Serializable
