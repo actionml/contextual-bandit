@@ -2,8 +2,6 @@
 
 This template requires Vowpal Wabbit. The included dependency in the build.sbt has been tested on Ubuntu 14.04 only. If you encounter issues, please build VW from source, per instructions below.
 
-For a tutorial featuring this engine template, please look [here](https://github.com/EmergentOrder/PredictionIO/blob/develop/docs/manual/source/demo/sentiment.html.md)
-
 ## Abbreviated Vowpal Setup:
 
 ## Prerequisite software
