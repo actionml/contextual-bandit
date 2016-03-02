@@ -1,4 +1,4 @@
-# Probabilistic Classifier Template [Vowpal Wabbit - LR/SGD] 
+# Page Variant Recommender [Vowpal Wabbit - CSOAA] 
 
 This template requires Vowpal Wabbit. The included dependency in the build.sbt has been tested on Ubuntu 14.04 only. If you encounter issues, please build VW from source, per instructions below.
 
