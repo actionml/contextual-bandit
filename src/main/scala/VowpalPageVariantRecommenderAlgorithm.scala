@@ -27,13 +27,18 @@ case class AlgorithmParams(
   maxClasses: Int
 ) extends Params
 
+case class PageVariantModel(
+  model: Array[Byte],
+  userData: Map[String, PropertyMap]
+)
+
 // extends P2LAlgorithm because VW doesn't contain RDD.
 class VowpalPageVariantRecommenderAlgorithm(val ap: AlgorithmParams)
-  extends P2LAlgorithm[PreparedData, Array[Byte], Query, PredictedResult] {
+  extends P2LAlgorithm[PreparedData, PageVariantModel, Query, PredictedResult] { 
 
   @transient lazy val logger = Logger[this.type]
 
-  def train(sc: SparkContext, data: PreparedData): Array[Byte] = {
+  def train(sc: SparkContext, data: PreparedData): PageVariantModel = {
    
     require(!data.examples.take(1).isEmpty,
       s"RDD[VisitorVariantExample] in PreparedData cannot be empty." +
@@ -56,21 +61,19 @@ class VowpalPageVariantRecommenderAlgorithm(val ap: AlgorithmParams)
     
 
 
-    val classes = (1 to ap.maxClasses)
+    //val classes = (1 to ap.maxClasses)
 
-    val classes2 = data.testGroups.collect().map( x => (x._1, (1 to ap.maxClasses) zip x._2.fields("pageVariants").extract[List[String]])).toMap 
+    val classes = data.testGroups.collect().map( x => (x._1, (1 to ap.maxClasses) zip x._2.fields("pageVariants").extract[List[String]])).toMap 
 
     val userData = data.users.collect().map( x => x._1 -> x._2).toMap
 
     val inputs: RDD[String] = data.examples.map { example =>
-      val testGroupClasses = classes2.getOrElse(example.testGroupId, Seq[(Int, String)]())
+      val testGroupClasses = classes.getOrElse(example.testGroupId, Seq[(Int, String)]())
       
       val classString: String = testGroupClasses.map { thisClass => thisClass._1.toString + ":" + 
          (if(thisClass._2 == example.variant && example.converted) "0.0" else if(thisClass._2 == example.variant) "2.0" else "1.0") }.mkString(" ")
- 
   
- 
-    constructVWString(classString, example, userData.getOrElse(example.visitor, PropertyMap(Map[String,JValue](), new DateTime(), new DateTime())))
+    constructVWString(classString, example.user, example.testGroupId, userData)
 
     //  }.union(List[String](sys.props("line.separator")))
     }
@@ -90,7 +93,7 @@ class VowpalPageVariantRecommenderAlgorithm(val ap: AlgorithmParams)
    
     vw.close()
      
-    Files.readAllBytes(Paths.get(ap.modelName))
+    PageVariantModel(Files.readAllBytes(Paths.get(ap.modelName)), userData) 
   }
 
 
@@ -98,16 +101,24 @@ class VowpalPageVariantRecommenderAlgorithm(val ap: AlgorithmParams)
   //TODO: Reverse lookup of predicted class names
   //TODO: Sampling
  
-  def predict(byteArray: Array[Byte], query: Query): PredictedResult = {
-    Files.write(Paths.get(ap.modelName), byteArray)
+  def predict(model: PageVariantModel, query: Query): PredictedResult = {
+    Files.write(Paths.get(ap.modelName), model.model)
 
-    val vw = new VW("--link logistic -i " + ap.modelName)
-    val pred = vw.predict("|" + ap.namespace + " " + rawTextToVWFormattedString(query.text)).toDouble 
+    val vw = new VW(" -i " + ap.modelName)
+   
+    val classString = (1 to ap.maxClasses).mkString(" ")
+
+    println(model.userData)
+ 
+    val queryText = constructVWString(classString, query.user, query.testGroupId, model.userData)
+
+    //val queryText = classString +  " |" + ap.namespace + " " + rawTextToVWFormattedString(query.user + " " + query.testGroupId)
+    println(queryText)
+    val pred = vw.predict(queryText).toDouble 
     vw.close()
 
-    val category = (if(pred > 0.5) 1 else 0).toString
-    val prob = (if(pred > 0.5) pred else 1.0 - pred)
-    val result = new PredictedResult(category, prob)
+    val pageVariant = pred.toString 
+    val result = new PredictedResult(pageVariant)
    
     result
   }
@@ -121,11 +132,11 @@ class VowpalPageVariantRecommenderAlgorithm(val ap: AlgorithmParams)
      vec.toArray.zipWithIndex.map{ case (dbl, int) => s"$int:$dbl"} mkString " "
   }
 
-  def constructVWString(classString: String, example: VisitorVariantExample, userProps: PropertyMap): String = {
+  def constructVWString(classString: String, user: String, testGroupId: String, userProps: Map[String,PropertyMap]): String = {
       @transient implicit lazy val formats = org.json4s.DefaultFormats
 
-     classString + " |" +  ap.namespace + " " + rawTextToVWFormattedString("visitor_" + example.visitor + " " + "testGroupId_" + example.testGroupId + " " + (userProps -- List("converted", "testGroupId")).fields.map { entry =>
-          entry._1 + "_" + entry._2.extract[String].replaceAll("\\s+","_") + "_" + example.testGroupId }.mkString(" "))
+     classString + " |" +  ap.namespace + " " + rawTextToVWFormattedString("user_" + user + " " + "testGroupId_" + testGroupId + " " + (userProps.getOrElse(user, PropertyMap(Map[String,JValue](), new DateTime(), new DateTime())) -- List("converted", "testGroupId")).fields.map { entry =>
+          entry._1 + "_" + entry._2.extract[String].replaceAll("\\s+","_") + "_" + testGroupId }.mkString(" "))
 }
 
 }

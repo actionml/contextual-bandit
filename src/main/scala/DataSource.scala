@@ -37,12 +37,12 @@ class DataSource(val dsp: DataSourceParams)
 
     val usersRDD = PEventStore.aggregateProperties(
       appName = dsp.appName,
-      entityType = "visitor")(sc)
+      entityType = "user")(sc)
 
 
     val eventsRDD = PEventStore.find(
       appName = dsp.appName,
-      entityType = Some("visitor"),
+      entityType = Some("user"),
       targetEntityType = Some(Some("variant")))(sc)
 
     val examples: RDD[VisitorVariantExample] = eventsRDD.map{ event =>
@@ -61,7 +61,7 @@ class DataSource(val dsp: DataSourceParams)
   
 }
 
-class VisitorVariantExample ( val converted: Boolean, val visitor: String, val variant: String, val testGroupId: String, val props: DataMap ) extends Serializable
+class VisitorVariantExample ( val converted: Boolean, val user: String, val variant: String, val testGroupId: String, val props: DataMap ) extends Serializable
 
 class TrainingData(
   val trainingExamples: RDD[VisitorVariantExample],

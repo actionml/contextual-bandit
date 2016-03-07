@@ -4,12 +4,12 @@ import io.prediction.controller.IEngineFactory
 import io.prediction.controller.Engine
 
 class Query(
-  val text: String
+  val user: String,
+  val testGroupId: String
 ) extends Serializable
 
 class PredictedResult(
-  val category: String,
-  val confidence: Double
+  val category: String
 ) extends Serializable
 
 class ActualResult(
