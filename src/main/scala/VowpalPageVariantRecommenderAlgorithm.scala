@@ -29,7 +29,8 @@ case class AlgorithmParams(
 
 case class PageVariantModel(
   model: Array[Byte],
-  userData: Map[String, PropertyMap]
+  userData: Map[String, PropertyMap],
+  classes: Map[String, Seq[(Int,String)]]
 )
 
 // extends P2LAlgorithm because VW doesn't contain RDD.
@@ -59,10 +60,6 @@ class VowpalPageVariantRecommenderAlgorithm(val ap: AlgorithmParams)
 
     @transient implicit lazy val formats = org.json4s.DefaultFormats
     
-
-
-    //val classes = (1 to ap.maxClasses)
-
     val classes = data.testGroups.collect().map( x => (x._1, (1 to ap.maxClasses) zip x._2.fields("pageVariants").extract[List[String]])).toMap 
 
     val userData = data.users.collect().map( x => x._1 -> x._2).toMap
@@ -73,9 +70,7 @@ class VowpalPageVariantRecommenderAlgorithm(val ap: AlgorithmParams)
       val classString: String = testGroupClasses.map { thisClass => thisClass._1.toString + ":" + 
          (if(thisClass._2 == example.variant && example.converted) "0.0" else if(thisClass._2 == example.variant) "2.0" else "1.0") }.mkString(" ")
   
-    constructVWString(classString, example.user, example.testGroupId, userData)
-
-    //  }.union(List[String](sys.props("line.separator")))
+    constructVWString(classString, example.user, example.testGroupId, userData) 
     }
         
   
@@ -93,11 +88,9 @@ class VowpalPageVariantRecommenderAlgorithm(val ap: AlgorithmParams)
    
     vw.close()
      
-    PageVariantModel(Files.readAllBytes(Paths.get(ap.modelName)), userData) 
+    PageVariantModel(Files.readAllBytes(Paths.get(ap.modelName)), userData, classes) 
   }
 
-
-  //TODO: Same pre-processing as above
   //TODO: Reverse lookup of predicted class names
   //TODO: Sampling
  
@@ -117,11 +110,25 @@ class VowpalPageVariantRecommenderAlgorithm(val ap: AlgorithmParams)
     val pred = vw.predict(queryText).toDouble 
     vw.close()
 
-    val pageVariant = pred.toString 
+    val testGroupMap = model.classes(query.testGroupId).toMap
+    val pageVariant = testGroupMap(pred.toInt) 
     val result = new PredictedResult(pageVariant)
    
     result
   }
+
+  def sample[A](dist: Map[A, Double]): A = {
+  val p = scala.util.Random.nextDouble
+
+  val rangedProbs = dist.values.scanLeft(0.0)(_ + _).drop(1)
+
+  val rangedMap = (dist.keys zip rangedProbs).toMap
+
+  val item = dist.filter( x => rangedMap(x._1) >= p).keys.head
+
+  item
+  }
+
 
   def rawTextToVWFormattedString(str: String) : String = {
      //VW input cannot contain these characters 
