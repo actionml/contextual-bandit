@@ -91,10 +91,10 @@ class VowpalPageVariantRecommenderAlgorithm(val ap: AlgorithmParams)
     PageVariantModel(Files.readAllBytes(Paths.get(ap.modelName)), userData, classes) 
   }
 
-  //TODO: Reverse lookup of predicted class names
-  //TODO: Sampling
- 
+  //TODO: get epsilon correctly
   def predict(model: PageVariantModel, query: Query): PredictedResult = {
+   
+    val epsilon = 0.7
     Files.write(Paths.get(ap.modelName), model.model)
 
     val vw = new VW(" -i " + ap.modelName)
@@ -104,29 +104,33 @@ class VowpalPageVariantRecommenderAlgorithm(val ap: AlgorithmParams)
     println(model.userData)
  
     val queryText = constructVWString(classString, query.user, query.testGroupId, model.userData)
-
-    //val queryText = classString +  " |" + ap.namespace + " " + rawTextToVWFormattedString(query.user + " " + query.testGroupId)
+ 
     println(queryText)
-    val pred = vw.predict(queryText).toDouble 
+    val pred = vw.predict(queryText).toInt
     vw.close()
 
     val testGroupMap = model.classes(query.testGroupId).toMap
-    val pageVariant = testGroupMap(pred.toInt) 
+    
+    val probabilityMap = testGroupMap.keys.map { x => x -> (if(x == pred) 1 - epsilon else epsilon/ (ap.maxClasses -1) ) }.toMap 
+   
+    val sampledPred = sample(probabilityMap)
+
+    val pageVariant = testGroupMap(sampledPred) 
     val result = new PredictedResult(pageVariant)
    
     result
   }
 
   def sample[A](dist: Map[A, Double]): A = {
-  val p = scala.util.Random.nextDouble
+    val p = scala.util.Random.nextDouble
 
-  val rangedProbs = dist.values.scanLeft(0.0)(_ + _).drop(1)
+    val rangedProbs = dist.values.scanLeft(0.0)(_ + _).drop(1)
 
-  val rangedMap = (dist.keys zip rangedProbs).toMap
+    val rangedMap = (dist.keys zip rangedProbs).toMap
 
-  val item = dist.filter( x => rangedMap(x._1) >= p).keys.head
+    val item = dist.filter( x => rangedMap(x._1) >= p).keys.head
 
-  item
+    item
   }
 
 
