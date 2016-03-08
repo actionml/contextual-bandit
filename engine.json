@@ -9,7 +9,7 @@
   },
   "algorithms": [
     {
-      "name": "VWlogisticSGD",
+      "name": "PageVariantRecommender",
       "params": {
         "maxIter": 100,
         "regParam": 0.0,
@@ -17,7 +17,7 @@
         "bitPrecision": 24,
         "modelName": "model.vw",
         "namespace": "n",
-        "maxClasses": 10
+        "maxClasses": 3
       }
     }
   ]

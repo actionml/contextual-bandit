@@ -21,7 +21,7 @@ object ClassificationEngine extends IEngineFactory {
     new Engine(
       classOf[DataSource],
       classOf[Preparator],
-      Map("VWlogisticSGD" -> classOf[VowpalPageVariantRecommenderAlgorithm]),
+      Map("PageVariantRecommender" -> classOf[VowpalPageVariantRecommenderAlgorithm]),
       classOf[Serving])
   }
 }
