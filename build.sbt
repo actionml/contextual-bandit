@@ -2,7 +2,7 @@ import AssemblyKeys._
 
 assemblySettings
 
-name := "template-scala-probabilistic-classifier-VW-sgd"
+name := "template-scala-page-variant-recommender"
 
 organization := "io.prediction"
 

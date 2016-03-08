@@ -30,7 +30,8 @@ case class AlgorithmParams(
 case class PageVariantModel(
   model: Array[Byte],
   userData: Map[String, PropertyMap],
-  classes: Map[String, Seq[(Int,String)]]
+  classes: Map[String, Seq[(Int,String)]],
+  epsilon: Double
 )
 
 // extends P2LAlgorithm because VW doesn't contain RDD.
@@ -87,22 +88,27 @@ class VowpalPageVariantRecommenderAlgorithm(val ap: AlgorithmParams)
     val results = for (item <- inputs.collect()) yield vw.learn(item)  
    
     vw.close()
-     
-    PageVariantModel(Files.readAllBytes(Paths.get(ap.modelName)), userData, classes) 
+
+    //see http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.109.4518&rep=rep1&type=pdf
+
+    val epsilon0 = 100
+
+    val minEpsilon = 1.0 - (1.0/ap.maxClasses)
+
+    val epsilonT = scala.math.min(minEpsilon, epsilon0 / inputs.count)  
+
+    PageVariantModel(Files.readAllBytes(Paths.get(ap.modelName)), userData, classes, epsilonT) 
   }
 
   //TODO: get epsilon correctly
   def predict(model: PageVariantModel, query: Query): PredictedResult = {
-   
-    val epsilon = 0.7
+    
     Files.write(Paths.get(ap.modelName), model.model)
 
     val vw = new VW(" -i " + ap.modelName)
    
     val classString = (1 to ap.maxClasses).mkString(" ")
-
-    println(model.userData)
- 
+  
     val queryText = constructVWString(classString, query.user, query.testGroupId, model.userData)
  
     println(queryText)
@@ -111,7 +117,7 @@ class VowpalPageVariantRecommenderAlgorithm(val ap: AlgorithmParams)
 
     val testGroupMap = model.classes(query.testGroupId).toMap
     
-    val probabilityMap = testGroupMap.keys.map { x => x -> (if(x == pred) 1 - epsilon else epsilon/ (ap.maxClasses -1) ) }.toMap 
+    val probabilityMap = testGroupMap.keys.map { x => x -> (if(x == pred) 1.0 - model.epsilon else model.epsilon/ (ap.maxClasses - 1.0) ) }.toMap  
    
     val sampledPred = sample(probabilityMap)
 
