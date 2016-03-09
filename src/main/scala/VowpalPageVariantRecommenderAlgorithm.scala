@@ -122,7 +122,7 @@ class VowpalPageVariantRecommenderAlgorithm(val ap: AlgorithmParams)
     val sampledPred = sample(probabilityMap)
 
     val pageVariant = testGroupMap(sampledPred) 
-    val result = new PredictedResult(pageVariant)
+    val result = new PredictedResult(pageVariant, query.testGroupId)
    
     result
   }

@@ -4,14 +4,14 @@ import io.prediction.controller.OptionAverageMetric
 import io.prediction.controller.EmptyEvaluationInfo
 import io.prediction.controller.Evaluation
 
-case class Precision(category:Double)
+case class Precision(variant:Double)
   extends OptionAverageMetric[EmptyEvaluationInfo, Query, PredictedResult, ActualResult] {
-  override def header: String = s"Precision(category = $category)"
+  override def header: String = s"Precision(variant = $variant)"
 
   def calculate(query: Query, predicted: PredictedResult, actual: ActualResult)
   : Option[Double] = {
-    if (predicted.category == category) {
-      if (predicted.category == actual.category) {
+    if (predicted.variant == variant) {
+      if (predicted.variant == actual.variant) {
         Some(1.0)  // True positive
       } else {
         Some(0.0)  // False positive
@@ -23,5 +23,5 @@ case class Precision(category:Double)
 }
 
 object PrecisionEvaluation extends Evaluation {
-  engineMetric = (ClassificationEngine(), new Precision(category = 1.0))
+  engineMetric = (ClassificationEngine(), new Precision(variant = 1.0))
 }

@@ -9,11 +9,12 @@ class Query(
 ) extends Serializable
 
 class PredictedResult(
-  val category: String
+  val variant: String,
+  val testGroupId: String
 ) extends Serializable
 
 class ActualResult(
-  val category: String
+  val variant: String
 ) extends Serializable
 
 object ClassificationEngine extends IEngineFactory {
