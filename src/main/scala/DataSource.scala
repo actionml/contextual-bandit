@@ -30,15 +30,23 @@ class DataSource(val dsp: DataSourceParams)
   override
   def readTraining(sc: SparkContext): TrainingData = {
 
-    val testGroupsRDD = PEventStore.aggregateProperties(
+    val testGroupsPropsRDD = PEventStore.aggregateProperties(
       appName = dsp.appName,
       entityType = "testGroup")(sc)   
 
+
+    val testGroupsRDD = PEventStore.find(
+      appName = dsp.appName,
+      entityType = Some("testGroup"))(sc)
+
+    println(testGroupsRDD.count)
 
     val usersRDD = PEventStore.aggregateProperties(
       appName = dsp.appName,
       entityType = "user")(sc)
 
+
+    println(usersRDD.count)
 
     val eventsRDD = PEventStore.find(
       appName = dsp.appName,
@@ -49,7 +57,9 @@ class DataSource(val dsp: DataSourceParams)
         new VisitorVariantExample(event.properties.get[Boolean]("converted"), event.entityId, event.targetEntityId.getOrElse(throw new RuntimeException), event.properties.get[String]("testGroupId"), event.properties -- List("converted", "testGroupId"))
       }.cache()
 
-    new TrainingData(examples, usersRDD, testGroupsRDD)
+    val testGroupStartTimes = testGroupsRDD.map( testGroup => testGroup.entityId -> testGroup.eventTime)
+
+    new TrainingData(examples, usersRDD, testGroupsPropsRDD, testGroupStartTimes)
   }
 
   //TODO: remove
@@ -66,5 +76,6 @@ class VisitorVariantExample ( val converted: Boolean, val user: String, val vari
 class TrainingData(
   val trainingExamples: RDD[VisitorVariantExample],
   val users: RDD[(String, PropertyMap)],
-  val testGroups: RDD[(String, PropertyMap)]
+  val testGroups: RDD[(String, PropertyMap)],
+  val testGroupStartTimes: RDD[(String, org.joda.time.DateTime)]
 ) extends Serializable

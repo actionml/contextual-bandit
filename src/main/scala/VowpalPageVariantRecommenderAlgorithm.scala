@@ -4,7 +4,9 @@ import io.prediction.controller.P2LAlgorithm
 import io.prediction.controller.Params
 import io.prediction.data.storage.PropertyMap
 
+import org.joda.time.Duration
 import org.joda.time.DateTime
+import org.joda.time.Minutes
 import org.json4s._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.mllib.linalg.Vectors
@@ -31,7 +33,8 @@ case class PageVariantModel(
   model: Array[Byte],
   userData: Map[String, PropertyMap],
   classes: Map[String, Seq[(Int,String)]],
-  epsilon: Double
+  testPeriods: Map[String, Int],
+  testGroupStartTimes: Map[String, org.joda.time.DateTime]
 )
 
 // extends P2LAlgorithm because VW doesn't contain RDD.
@@ -43,31 +46,32 @@ class VowpalPageVariantRecommenderAlgorithm(val ap: AlgorithmParams)
   def train(sc: SparkContext, data: PreparedData): PageVariantModel = {
    
     require(!data.examples.take(1).isEmpty,
-      s"RDD[VisitorVariantExample] in PreparedData cannot be empty." +
-      " Please check if DataSource generates TrainingData" +
-      " and Preprator generates PreparedData correctly.")
+      s"No page variants events found, please insert page variant events")
+
     
 
     require(!data.users.take(1).isEmpty,
-      s"RDD[(String, PropertyMap)] in PreparedData cannot be empty." +
-      " Please check if DataSource generates TrainingData" +
-      " and Preprator generates PreparedData correctly.")
+      s"No users found, please initialize users")
 
     require(!data.testGroups.take(1).isEmpty,
-      s"RDD[(String, PropertyMap)] in PreparedData cannot be empty." +
-      " Please check if DataSource generates TrainingData" +
-      " and Preprator generates PreparedData correctly.")
+      s"No test groups found, please initialize test groups") 
 
 
     @transient implicit lazy val formats = org.json4s.DefaultFormats
-    
+
+    //test periods in minutes
+    val testPeriods = data.testGroups.collect().map( x => x._1 -> x._2.fields("testPeriod").extract[Int]).toMap    
+ 
+    for (item <- testPeriods) println(item)
+
     val classes = data.testGroups.collect().map( x => (x._1, (1 to ap.maxClasses) zip x._2.fields("pageVariants").extract[List[String]])).toMap 
 
     val userData = data.users.collect().map( x => x._1 -> x._2).toMap
 
     val inputs: RDD[String] = data.examples.map { example =>
       val testGroupClasses = classes.getOrElse(example.testGroupId, Seq[(Int, String)]())
-      
+     
+      //The magic numbers here are costs: 0.0 in case we see this variant, and it converted, 2.0 if we see it and it didn't convert, and 1.0 if we didn't see it 
       val classString: String = testGroupClasses.map { thisClass => thisClass._1.toString + ":" + 
          (if(thisClass._2 == example.variant && example.converted) "0.0" else if(thisClass._2 == example.variant) "2.0" else "1.0") }.mkString(" ")
   
@@ -87,20 +91,13 @@ class VowpalPageVariantRecommenderAlgorithm(val ap: AlgorithmParams)
 
     val results = for (item <- inputs.collect()) yield vw.learn(item)  
    
+
     vw.close()
 
-    //see http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.109.4518&rep=rep1&type=pdf
-
-    val epsilon0 = 100
-
-    val minEpsilon = 1.0 - (1.0/ap.maxClasses)
-
-    val epsilonT = scala.math.min(minEpsilon, epsilon0 / inputs.count)  
-
-    PageVariantModel(Files.readAllBytes(Paths.get(ap.modelName)), userData, classes, epsilonT) 
+    PageVariantModel(Files.readAllBytes(Paths.get(ap.modelName)), userData, classes, testPeriods, data.testGroupStartTimes.collect.toMap) 
   }
 
-  //TODO: get epsilon correctly
+  //TODO: get currentTestDuration
   def predict(model: PageVariantModel, query: Query): PredictedResult = {
     
     Files.write(Paths.get(ap.modelName), model.model)
@@ -115,9 +112,22 @@ class VowpalPageVariantRecommenderAlgorithm(val ap: AlgorithmParams)
     val pred = vw.predict(queryText).toInt
     vw.close()
 
-    val testGroupMap = model.classes(query.testGroupId).toMap
-    
-    val probabilityMap = testGroupMap.keys.map { x => x -> (if(x == pred) 1.0 - model.epsilon else model.epsilon/ (ap.maxClasses - 1.0) ) }.toMap  
+    //see http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.109.4518&rep=rep1&type=pdf
+    //we use testPeriods as epsilon0
+
+    val startTime = new DateTime(model.testGroupStartTimes(query.testGroupId))
+
+    println(startTime)
+ 
+    val minEpsilon = 1.0 - (1.0/model.classes.size)
+    val currentTestDuration = new Duration(startTime, new DateTime()).getStandardMinutes(); 
+
+    //scale epsilonT to the range 0.0-1.0
+    val epsilonTByTestGroup = model.testPeriods.map(x => x._1 -> scala.math.min(0, scala.math.min(minEpsilon, ((x._2 / currentTestDuration) - 1.0) / x._2 ))) 
+
+    val testGroupMap = model.classes(query.testGroupId).toMap 
+    val epsilonT = epsilonTByTestGroup(query.testGroupId)
+    val probabilityMap = testGroupMap.keys.map { x => x -> (if(x == pred) 1.0 - epsilonT else epsilonT/ (model.classes.size - 1.0) ) }.toMap  
    
     val sampledPred = sample(probabilityMap)
 
