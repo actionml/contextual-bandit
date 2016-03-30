@@ -57,9 +57,9 @@ class DataSource(val dsp: DataSourceParams)
         new VisitorVariantExample(event.properties.get[Boolean]("converted"), event.entityId, event.targetEntityId.getOrElse(throw new RuntimeException), event.properties.get[String]("testGroupId"), event.properties -- List("converted", "testGroupId"))
       }.cache()
 
-    val testGroupStartTimes = testGroupsRDD.map( testGroup => testGroup.entityId -> testGroup.eventTime)
+    val testPeriodStartTimes = testGroupsRDD.map( testGroup => testGroup.entityId -> testGroup.properties.get[String]("testPeriodStart"))
 
-    new TrainingData(examples, usersRDD, testGroupsPropsRDD, testGroupStartTimes)
+    new TrainingData(examples, usersRDD, testGroupsPropsRDD, testPeriodStartTimes)
   }
 
   //TODO: remove
@@ -77,5 +77,5 @@ class TrainingData(
   val trainingExamples: RDD[VisitorVariantExample],
   val users: RDD[(String, PropertyMap)],
   val testGroups: RDD[(String, PropertyMap)],
-  val testGroupStartTimes: RDD[(String, org.joda.time.DateTime)]
+  val testPeriodStarts: RDD[(String, String)]
 ) extends Serializable

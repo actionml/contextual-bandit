@@ -12,12 +12,12 @@ class PreparedData(
   val examples: RDD[VisitorVariantExample],
   val users: RDD[(String, PropertyMap)],
   val testGroups: RDD[(String, PropertyMap)],
-  val testGroupStartTimes: RDD[(String, org.joda.time.DateTime)]
+  val testPeriodStarts: RDD[(String, String)]
 ) extends Serializable
 
 class Preparator extends PPreparator[TrainingData, PreparedData] {
 
   def prepare(sc: SparkContext, trainingData: TrainingData): PreparedData = {
-    new PreparedData(trainingData.trainingExamples, trainingData.users, trainingData.testGroups, trainingData.testGroupStartTimes)
+    new PreparedData(trainingData.trainingExamples, trainingData.users, trainingData.testGroups, trainingData.testPeriodStarts)
   }
 }
