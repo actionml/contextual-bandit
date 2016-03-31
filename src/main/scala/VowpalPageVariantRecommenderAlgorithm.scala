@@ -101,8 +101,10 @@ class VowpalPageVariantRecommenderAlgorithm(val ap: AlgorithmParams)
     Files.write(Paths.get(ap.modelName), model.model)
 
     val vw = new VW(" -i " + ap.modelName)
-   
-    val classString = (1 to ap.maxClasses).mkString(" ")
+
+    val numClasses = model.classes(query.testGroupId).size
+
+    val classString = (1 to numClasses).mkString(" ")
   
     val queryText = constructVWString(classString, query.user, query.testGroupId, model.userData)
  
@@ -111,8 +113,6 @@ class VowpalPageVariantRecommenderAlgorithm(val ap: AlgorithmParams)
 
     //see http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.109.4518&rep=rep1&type=pdf
     //we use testPeriods as epsilon0
-
-    val numClasses = model.classes(query.testGroupId).size
 
     val startTime = new DateTime(model.testPeriodStarts(query.testGroupId))
     val endTime =  new DateTime(model.testPeriodEnds(query.testGroupId))
