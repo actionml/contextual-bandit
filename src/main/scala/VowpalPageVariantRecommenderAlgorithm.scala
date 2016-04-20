@@ -85,7 +85,7 @@ class VowpalPageVariantRecommenderAlgorithm(val ap: AlgorithmParams)
  
     val vw = new VW("--csoaa 10 " + "--invert_hash readable.model -b " + ap.bitPrecision + " " + "-f " + ap.modelName + " " + reg + " " + lrate)
         
-    for (item <- inputs.collect()) println(item)
+    //for (item <- inputs.collect()) println(item)
 
     val results = for (item <- inputs.collect()) yield vw.learn(item)  
    
@@ -98,7 +98,7 @@ class VowpalPageVariantRecommenderAlgorithm(val ap: AlgorithmParams)
   //TODO: get currentTestDuration
   def predict(model: PageVariantModel, query: Query): PredictedResult = {
     
-    Files.write(Paths.get(ap.modelName), model.model)
+    //Files.write(Paths.get(ap.modelName), model.model)
 
     val vw = new VW(" -i " + ap.modelName)
 
