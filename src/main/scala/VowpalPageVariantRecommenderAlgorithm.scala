@@ -59,10 +59,13 @@ class VowpalPageVariantRecommenderAlgorithm(val ap: AlgorithmParams)
 
     @transient implicit lazy val formats = org.json4s.DefaultFormats
 
-    //test periods end
-    val testPeriodEnds = data.testGroups.collect().map( x => x._1 -> x._2.fields("testPeriodEnd").extract[String]).toMap    
+    val collectedTestGroups = data.testGroups.collect()
 
-    val classes = data.testGroups.collect().map( x => (x._1, (1 to ap.maxClasses) zip x._2.fields("pageVariants").extract[List[String]])).toMap 
+    val testPeriodEnds = collectedTestGroups.map( x => x._1 -> x._2.fields("testPeriodEnd").extract[String]).toMap    
+
+    val testPeriodStarts = collectedTestGroups.map( x => x._1 -> x._2.fields("testPeriodStart").extract[String]).toMap
+
+    val classes = collectedTestGroups.map( x => (x._1, (1 to ap.maxClasses) zip x._2.fields("pageVariants").extract[List[String]])).toMap 
 
     val userData = data.users.collect().map( x => x._1 -> x._2).toMap
 
@@ -92,10 +95,9 @@ class VowpalPageVariantRecommenderAlgorithm(val ap: AlgorithmParams)
 
     vw.close()
 
-    PageVariantModel(Files.readAllBytes(Paths.get(ap.modelName)), userData, classes, data.testPeriodStarts.collect.toMap, testPeriodEnds) 
+    PageVariantModel(Files.readAllBytes(Paths.get(ap.modelName)), userData, classes, testPeriodStarts, testPeriodEnds) 
   }
-
-  //TODO: get currentTestDuration
+ 
   def predict(model: PageVariantModel, query: Query): PredictedResult = {
     
     //Files.write(Paths.get(ap.modelName), model.model)

@@ -59,7 +59,7 @@ class DataSource(val dsp: DataSourceParams)
 
     val testPeriodStartTimes = testGroupsRDD.map( testGroup => testGroup.entityId -> testGroup.properties.get[String]("testPeriodStart"))
 
-    new TrainingData(examples, usersRDD, testGroupsPropsRDD, testPeriodStartTimes)
+    new TrainingData(examples, usersRDD, testGroupsPropsRDD)
   }
 
   //TODO: remove
@@ -76,6 +76,5 @@ class VisitorVariantExample ( val converted: Boolean, val user: String, val vari
 class TrainingData(
   val trainingExamples: RDD[VisitorVariantExample],
   val users: RDD[(String, PropertyMap)],
-  val testGroups: RDD[(String, PropertyMap)],
-  val testPeriodStarts: RDD[(String, String)]
+  val testGroups: RDD[(String, PropertyMap)]
 ) extends Serializable
