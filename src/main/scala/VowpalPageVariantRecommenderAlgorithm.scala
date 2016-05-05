@@ -81,12 +81,12 @@ class VowpalPageVariantRecommenderAlgorithm(val ap: AlgorithmParams)
         
   
     val reg = "--l2 " + ap.regParam
-    //val iters = "-c -k --passes " + ap.maxIter
+    val iters = "-c -k --passes " + ap.maxIter
     val lrate = "-l " + ap.stepSize
 
     //ap.maxClasses 
  
-    val vw = new VW("--csoaa 10 " + "--invert_hash readable.model -b " + ap.bitPrecision + " " + "-f " + ap.modelName + " " + reg + " " + lrate)
+    val vw = new VW("--csoaa 10 " + "-b " + ap.bitPrecision + " " + "-f " + ap.modelName + " " + reg + " " + lrate + " " + iters)
         
     //for (item <- inputs.collect()) println(item)
 
