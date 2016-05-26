@@ -4,7 +4,12 @@
   "engineFactory": "org.template.classification.ClassificationEngine",
   "datasource": {
     "params": {
-      "appName": "PageVariant1"
+      "appName": "PageVariant2",
+      "eventWindow": {
+        "duration": "180 days",
+        "removeDuplicates":true,
+        "compressProperties":true
+      }
     }
   },
   "algorithms": [

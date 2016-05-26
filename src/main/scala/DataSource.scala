@@ -14,21 +14,28 @@ import org.apache.spark.SparkContext._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.mllib.linalg.Vectors
+import io.prediction.core.{EventWindow, SelfCleaningDataSource}
 
 import grizzled.slf4j.Logger
 
 case class DataSourceParams(
-  appName: String
+  appName: String,
+  eventWindow: Option[EventWindow]
 ) extends Params
 
 class DataSource(val dsp: DataSourceParams)
   extends PDataSource[TrainingData,
-      EmptyEvaluationInfo, Query, ActualResult] {
+      EmptyEvaluationInfo, Query, ActualResult] with SelfCleaningDataSource {
 
-  @transient lazy val logger = Logger[this.type]
+  @transient override lazy val logger = Logger[this.type]
+
+  override def appName = dsp.appName
+  override def eventWindow = dsp.eventWindow
 
   override
   def readTraining(sc: SparkContext): TrainingData = {
+
+    cleanPersistedPEvents(sc)
 
     val testGroupsPropsRDD = PEventStore.aggregateProperties(
       appName = dsp.appName,
