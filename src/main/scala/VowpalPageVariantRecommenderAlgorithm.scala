@@ -3,6 +3,8 @@ package org.template.classification
 import io.prediction.controller.P2LAlgorithm
 import io.prediction.controller.Params
 import io.prediction.data.storage.PropertyMap
+import io.prediction.data.store.LEventStore
+import io.prediction.data.storage.Event
 
 import org.joda.time.Duration
 import org.joda.time.DateTime
@@ -14,12 +16,12 @@ import org.apache.spark.SparkContext
 import org.apache.spark.mllib.linalg.Vector
 import grizzled.slf4j.Logger
 
-
 import java.nio.file.{Files, Paths}
 
 import vw.VW
 
 case class AlgorithmParams(
+  appName: String,
   maxIter: Int,
   regParam: Double,
   stepSize: Double,
@@ -88,7 +90,7 @@ class VowpalPageVariantRecommenderAlgorithm(val ap: AlgorithmParams)
  
     val vw = new VW("--csoaa 10 " + "-b " + ap.bitPrecision + " " + "-f " + ap.modelName + " " + reg + " " + lrate + " " + iters)
         
-    //for (item <- inputs.collect()) println(item)
+    for (item <- inputs.collect()) println(item)
 
     val results = for (item <- inputs.collect()) yield vw.learn(item)  
    
@@ -99,17 +101,29 @@ class VowpalPageVariantRecommenderAlgorithm(val ap: AlgorithmParams)
   }
  
   def predict(model: PageVariantModel, query: Query): PredictedResult = {
-    
-    //Files.write(Paths.get(ap.modelName), model.model)
+   
+    println(model.classes)
 
-    val vw = new VW(" -i " + ap.modelName)
+    val pageVariant = if(model.classes isDefinedAt query.testGroupId) getPageVariant(model, query) else getDefaultPageVariant(query)
+
+    //for (item <- probabilityMap) println(item)
+  
+    val result = new PredictedResult(pageVariant, query.testGroupId)
+   
+    result
+  }
+
+
+  def getPageVariant(model: PageVariantModel, query: Query): String = {
+     val vw = new VW(" -i " + ap.modelName)
 
     val numClasses = model.classes(query.testGroupId).size
 
+
     val classString = (1 to numClasses).mkString(" ")
-  
+
     val queryText = constructVWString(classString, query.user, query.testGroupId, model.userData)
- 
+
     val pred = vw.predict(queryText).toInt
     vw.close()
 
@@ -126,19 +140,34 @@ class VowpalPageVariantRecommenderAlgorithm(val ap: AlgorithmParams)
     //scale epsilonT to the range 0.0-maxEpsilon
     val epsilonT = scala.math.max(0, scala.math.min(maxEpsilon, maxEpsilon * (1.0 - currentTestDuration/ totalTestDuration) ))
 
-    val testGroupMap = model.classes(query.testGroupId).toMap 
+    val testGroupMap = model.classes(query.testGroupId).toMap
 
-    val probabilityMap = testGroupMap.keys.map { x => x -> (if(x == pred) 1.0 - epsilonT else epsilonT/ (numClasses - 1.0) ) }.toMap  
+    val probabilityMap = testGroupMap.keys.map { x => x -> (if(x == pred) 1.0 - epsilonT else epsilonT/ (numClasses - 1.0) ) }.toMap 
 
-    //for (item <- probabilityMap) println(item)
-  
- 
     val sampledPred = sample(probabilityMap)
 
-    val pageVariant = testGroupMap(sampledPred) 
-    val result = new PredictedResult(pageVariant, query.testGroupId)
+    val pageVariant = testGroupMap(sampledPred)
+    return pageVariant 
+  }
+
+  def getDefaultPageVariant(query: Query): String = {
+     logger.info("Test group has not been trained with  yet. Fall back to uniform distribution")
+     val testGroupEvent: Event = LEventStore.findByEntity(
+        appName = ap.appName,
+        // entityType and entityId is specified for fast lookup
+        entityType = "testGroup",
+        entityId = query.testGroupId,
+        latest = true,
+        // set time limit to avoid super long DB access
+        timeout = scala.concurrent.duration.Duration(200, "millis")
+     ).toList.head
    
-    result
+     val props = testGroupEvent.properties
+     val pageVariants = props.get[Array[String]]("pageVariants")
+     val numClasses = pageVariants.size
+     val map = pageVariants.map{ x => x -> 1.0/numClasses}.toMap 
+     val sampledPred = sample(map)
+     sampledPred
   }
 
   def sample[A](dist: Map[A, Double]): A = {

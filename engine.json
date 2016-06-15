@@ -16,6 +16,7 @@
     {
       "name": "PageVariantRecommender",
       "params": {
+        "appName": "PageVariant2",
         "maxIter": 100,
         "regParam": 0.0,
         "stepSize": 0.1,
