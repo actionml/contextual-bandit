@@ -47,13 +47,13 @@ class VowpalPageVariantRecommenderAlgorithm(val ap: AlgorithmParams)
 
   def train(sc: SparkContext, data: PreparedData): PageVariantModel = {
    
-    require(!data.examples.take(1).isEmpty,
-      s"No page variants events found, please insert page variant events")
+    //require(!data.examples.take(1).isEmpty,
+    //  s"No page variants events found, please insert page variant events")
 
     
 
-    require(!data.users.take(1).isEmpty,
-      s"No users found, please initialize users")
+    //require(!data.users.take(1).isEmpty,
+    //  s"No users found, please initialize users")
 
     require(!data.testGroups.take(1).isEmpty,
       s"No test groups found, please initialize test groups") 
