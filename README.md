@@ -98,7 +98,7 @@ All usage events can be thought of as (user-id, page-variant-id, test-group-id, 
 
 Using the SDK of your choice (or directly using REST to the Eventserver, as seen above), define an event of the form:
 
-
+```
 {
    "event" : "page-view-conversion",
    "entityType" : "user",
@@ -110,6 +110,7 @@ Using the SDK of your choice (or directly using REST to the Eventserver, as seen
       "converted" : true
     }
 }
+```
 
 Here the targetEntityId can be any string.
 
@@ -118,7 +119,7 @@ Here the targetEntityId can be any string.
 Each engine has its own PredictionServer that can be queried. It is implemented in a REST API through the GET verb. A server is launched when you run `pio deploy`. The GET request will have a JSON query that is specific to a single engine. You may with to construct these with one of the PredictionIO SDKs. For the Page Variant Recommender here are some examples that work with the above data.
 
 The PVR provides personalized queries. These are JSON + REST. A simple example using curl for personalized recommendations is:
-
+```
    curl -H "Content-Type: application/json" -d '
    {
       "user": "psmith", 
@@ -131,15 +132,14 @@ This will get recommendations for user: "psmith", These will be returned as a JS
       "Variant": "variantA",
       "testGroupId": "testGroupA"
    }
-
-
+```
 
 Note that you can also request a page variant for a new or anonymous user, in which case the recommendations will be based purely on the context features (e.g. gender, country, etc.). If there is no information about the user the most frequently converted variant will be returned
 
 #Configuration of the Page Variant Recommender
 
 The Page Variant Recommender has a configuration file called engine.json in the root directory. This defines parameters for all phases of the engine. The phases are data preparation, model building, and prediction server deployment. For the Page Variant Recommender all static parameters are kept here. The configurations makes liberal use of defaults so just because a parameter is not mentioned in engine.json does not mean the param is unspecified.
-
+```
   {
   "id": "default",
   "description": "Default settings",
@@ -160,9 +160,9 @@ The Page Variant Recommender has a configuration file called engine.json in the 
       }
   ]
 }
+```
 
 
-}
 
 #Notes
 
