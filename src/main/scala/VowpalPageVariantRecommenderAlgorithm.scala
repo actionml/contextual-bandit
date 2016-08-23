@@ -1,10 +1,10 @@
 package org.template.classification
 
-import io.prediction.controller.P2LAlgorithm
-import io.prediction.controller.Params
-import io.prediction.data.storage.PropertyMap
-import io.prediction.data.store.LEventStore
-import io.prediction.data.storage.Event
+import org.apache.predictionio.controller.P2LAlgorithm
+import org.apache.predictionio.controller.Params
+import org.apache.predictionio.data.storage.PropertyMap
+import org.apache.predictionio.data.store.LEventStore
+import org.apache.predictionio.data.storage.Event
 
 import org.joda.time.Duration
 import org.joda.time.DateTime

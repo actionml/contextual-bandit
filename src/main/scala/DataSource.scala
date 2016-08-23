@@ -1,20 +1,20 @@
 package org.template.classification
 
-import io.prediction.controller.PDataSource
-import io.prediction.controller.EmptyEvaluationInfo
-import io.prediction.controller.EmptyActualResult
-import io.prediction.controller.Params
-import io.prediction.data.storage.Event
-import io.prediction.data.store.PEventStore
-import io.prediction.data.storage.DataMap
-import io.prediction.data.storage.PropertyMap
+import org.apache.predictionio.controller.PDataSource
+import org.apache.predictionio.controller.EmptyEvaluationInfo
+import org.apache.predictionio.controller.EmptyActualResult
+import org.apache.predictionio.controller.Params
+import org.apache.predictionio.data.storage.Event
+import org.apache.predictionio.data.store.PEventStore
+import org.apache.predictionio.data.storage.DataMap
+import org.apache.predictionio.data.storage.PropertyMap
 
 import org.apache.spark.SparkContext
 import org.apache.spark.SparkContext._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.mllib.linalg.Vectors
-import io.prediction.core.{EventWindow, SelfCleaningDataSource}
+import org.apache.predictionio.core.{EventWindow, SelfCleaningDataSource}
 
 import grizzled.slf4j.Logger
 
