@@ -15,6 +15,5 @@ libraryDependencies ++= {
   "org.apache.predictionio"    %% "core"          % "0.10.0-SNAPSHOT" % "provided",
   "org.apache.spark" %% "spark-core"    % "1.3.0" % "provided",
   "org.apache.spark" %% "spark-mllib"   % "1.3.0" % "provided",
-  "com.github.mauricio" %% "postgresql-async" % "0.2.20",
   "com.github.johnlangford" % artifact % "8.0.0")
 }
