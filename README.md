@@ -162,6 +162,14 @@ The Page Variant Recommender has a configuration file called engine.json in the 
 }
 ```
 
+#Training
+Invoke:
+```
+pio train
+```
+
+As usual for a PredictionIO template. 
+This template has been updated to train continuously, and does not follow the standard PIO behavior on training of simply executing on a single batch and exiting.
 
 
 #Notes
