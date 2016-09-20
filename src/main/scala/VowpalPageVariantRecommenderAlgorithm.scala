@@ -85,9 +85,8 @@ class VowpalPageVariantRecommenderAlgorithm(val ap: AlgorithmParams)
     val userData = freshPreparedData.users.collect().map( x => x._1 -> x._2).toMap
 
     trainOnAllHistoricalData(freshPreparedData, classes, userData,vw)  
-
-   //TODO: ?
-    //vw.close()
+ 
+    vw.close()
 
     saveObject(UserData(userData), "userData")
     saveObject(Classes(classes), "classes")
