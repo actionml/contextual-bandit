@@ -31,7 +31,8 @@ case class AlgorithmParams(
   bitPrecision: Int,
   modelName: String,
   namespace: String,
-  maxClasses: Int
+  maxClasses: Int,
+  initialize: Boolean
 ) extends Params
 
 case class PageVariantModel(
@@ -70,34 +71,31 @@ class VowpalPageVariantRecommenderAlgorithm(val ap: AlgorithmParams)
   val ds = new DataSource(DataSourceParams(ap.appName, None))
 
   def train(sc: SparkContext, data: PreparedData): PageVariantModel = {
-
-   while(true){
-     val vw = createVW()
-
-     val freshData = ds.readTraining(sc)
-     val freshPreparedData = new PreparedData(freshData.trainingExamples, freshData.users, freshData.testGroups)
- 
-    require(!freshPreparedData.testGroups.take(1).isEmpty,
-      s"No test groups found, please initialize test groups")
- 
-    val (classes, testPeriodStarts, testPeriodEnds) = testGroupToClassesAndPeriodBounds(freshPreparedData) 
-
-    val userData = freshPreparedData.users.collect().map( x => x._1 -> x._2).toMap
-
-    trainOnAllHistoricalData(freshPreparedData, classes, userData,vw)  
- 
-    vw.close()
-
-    saveObject(UserData(userData), "userData")
-    saveObject(Classes(classes), "classes")
-    saveObject(TestPeriodStarts(testPeriodStarts), "testPeriodStarts")
-    saveObject(TestPeriodEnds(testPeriodEnds), "testPeriodEnds")
-
    
+  if(!ap.initialize){
+     while(true){
+       val vw = createVW()
 
+       val freshData = ds.readTraining(sc)
+       val freshPreparedData = new PreparedData(freshData.trainingExamples, freshData.users, freshData.testGroups)
+ 
+      require(!freshPreparedData.testGroups.take(1).isEmpty,
+        s"No test groups found, please initialize test groups")
+ 
+      val (classes, testPeriodStarts, testPeriodEnds) = testGroupToClassesAndPeriodBounds(freshPreparedData) 
+
+      val userData = freshPreparedData.users.collect().map( x => x._1 -> x._2).toMap
+
+      trainOnAllHistoricalData(freshPreparedData, classes, userData,vw)  
+ 
+      vw.close()
+
+      saveObject(UserData(userData), "userData")
+      saveObject(Classes(classes), "classes")
+      saveObject(TestPeriodStarts(testPeriodStarts), "testPeriodStarts")
+      saveObject(TestPeriodEnds(testPeriodEnds), "testPeriodEnds")
+    }
   }
-
-    //Now irrelevant, dummy
     return PageVariantModel(null, null, null, null, null)
   }
 

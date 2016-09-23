@@ -4,7 +4,7 @@
   "engineFactory": "org.template.classification.ClassificationEngine",
   "datasource": {
     "params": {
-      "appName": "PageVariant2",
+      "appName": "PageVariant",
       "eventWindow": {
         "duration": "180 days",
         "removeDuplicates":true,
@@ -16,14 +16,15 @@
     {
       "name": "PageVariantRecommender",
       "params": {
-        "appName": "PageVariant2",
+        "appName": "PageVariant",
         "maxIter": 100,
         "regParam": 0.0,
         "stepSize": 0.1,
         "bitPrecision": 24,
         "modelName": "model.vw",
         "namespace": "n",
-        "maxClasses": 3
+        "maxClasses": 3,
+        "initialize": true
       }
     }
   ]
