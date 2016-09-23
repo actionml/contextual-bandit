@@ -158,9 +158,9 @@ class VowpalPageVariantRecommenderAlgorithm(val ap: AlgorithmParams)
   }
 
  
-  def predict(model: PageVariantModel, query: Query): PredictedResult = {
+  def predict(origModel: PageVariantModel, query: Query): PredictedResult = {
 
-    val newModel = PageVariantModel(model.model,
+    val newModel = PageVariantModel(origModel.model,
                                     readObject[UserData]("userData"), 
                                     readObject[Classes]("classes"),
                                     readObject[TestPeriodStarts]("testPeriodStarts"),
@@ -170,7 +170,7 @@ class VowpalPageVariantRecommenderAlgorithm(val ap: AlgorithmParams)
     //println(model.classes)
     //println(model.userData)
 
-    val pageVariant = if(model.classes.classes isDefinedAt query.testGroupId) getPageVariant(model, query) else getDefaultPageVariant(query)
+    val pageVariant = if(newModel.classes.classes isDefinedAt query.testGroupId) getPageVariant(newModel, query) else getDefaultPageVariant(query)
 
     //for (item <- probabilityMap) println(item)
   
