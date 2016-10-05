@@ -30,7 +30,7 @@ object EngineParamsList extends EngineParamsGenerator {
   // algorithm parameters. In this case, we evaluate 3 engine params, each with
   // a different algorithm params value.
   engineParamsList = Seq(
-    baseEP.copy(algorithmParamsList = Seq(("PageVariantRecommender", AlgorithmParams("test", 10, 0.1, 1.0, 1, "model.vw", "n",10)))),
-    baseEP.copy(algorithmParamsList = Seq(("PageVariantRecommender", AlgorithmParams("test", 100, 0.01, 1.0, 1, "model.vw", "n",10)))),
-    baseEP.copy(algorithmParamsList = Seq(("PageVariantRecommender", AlgorithmParams("test", 1, 0.1, 1.0, 1, "model.vw", "n",10)))))
+    baseEP.copy(algorithmParamsList = Seq(("PageVariantRecommender", AlgorithmParams("test", 10, 0.1, 1.0, 1, "model.vw", "n",10, true)))),
+    baseEP.copy(algorithmParamsList = Seq(("PageVariantRecommender", AlgorithmParams("test", 100, 0.01, 1.0, 1, "model.vw", "n",10,true)))),
+    baseEP.copy(algorithmParamsList = Seq(("PageVariantRecommender", AlgorithmParams("test", 1, 0.1, 1.0, 1, "model.vw", "n",10, true)))))
 }
