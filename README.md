@@ -169,8 +169,17 @@ pio train
 ```
 
 As usual for a PredictionIO template. 
-This template has been updated to train continuously, and does not follow the standard PIO behavior on training of simply executing on a single batch and exiting.
+This template has been updated to train continuously, and does not follow the standard PIO behavior on training of simply executing on a single batch and exiting. Due to PIO limitations, you must perform an initialization step by setting 
+```
+"initialize": true
+``` 
+in the engine.json, under algorithm params, and running training once. This will create a dummy model. Then switch to 
+```
+"initialize": false
+```
+and train again. Now training will run continuously. 
 
+Because PIO was not designed for streaming data sources, instead we poll in an infinite loop against the EventServer for new events. There is no polling period  or timeout (apart from those already in place in PIO / dependencies). As soon as one training iteration has finished, we poll and do another training iteration.
 
 #Notes
 
