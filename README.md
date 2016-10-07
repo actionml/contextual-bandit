@@ -138,7 +138,7 @@ Note that you can also request a page variant for a new or anonymous user, in wh
 
 #Configuration of the Page Variant Recommender
 
-The Page Variant Recommender has a configuration file called engine.json in the root directory. This defines parameters for all phases of the engine. The phases are data preparation, model building, and prediction server deployment. For the Page Variant Recommender all static parameters are kept here. The configurations makes liberal use of defaults so just because a parameter is not mentioned in engine.json does not mean the param is unspecified.
+The Page Variant Recommender has a configuration file called engine.json in the root directory. This defines parameters for all phases of the engine. The phases are data preparation, model building, and prediction server deployment. For the Page Variant Recommender all static parameters are kept here. The configurations makes liberal use of defaults so just because a parameter is not mentioned in engine.json does not mean the param is unspecified. Note that JSON does not allow comments, so don't cut and paste from below, instead refer to the actual engine.json.
 ```
   {
   "id": "default",
@@ -146,17 +146,28 @@ The Page Variant Recommender has a configuration file called engine.json in the 
   "engineFactory": "org.template.pagevariant.PageVariantRecommenderEngine",
   "datasource": {
     "params": {
-      "appName": "pageVariantsRecApp"
-    }
-  },
-  "preparator": {
-    "params": {
-      … // TODO 
+      "appName": "PageVariant",
+      "eventWindow": {
+        "duration": "180 days",
+        "removeDuplicates":true,
+        "compressProperties":true
+      }
     }
   },
   "algorithms": [
     {
-      … //TODO 
+      "name": "PageVariantRecommender",
+      "params": {
+        "appName": "PageVariant",
+        "maxIter": 100,  // Max training  iterations
+        "regParam": 0.0, // Regularization
+        "stepSize": 0.1, // Learning rate
+        "bitPrecision": 24, //feature hashing target size in bits
+        "modelName": "model.vw",
+        "namespace": "n",
+        "maxClasses": 3,
+        "initialize": true //true the first invocation, false afterwards
+        }
       }
   ]
 }
