@@ -1,3 +1,20 @@
+/*
+ * Copyright ActionML, LLC under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.template.classification
 
 import org.apache.predictionio.controller.P2LAlgorithm
@@ -24,45 +41,39 @@ import java.nio.file.{Files, Paths}
 import vw.VW
 
 case class AlgorithmParams(
-  appName: String,
-  maxIter: Int,
-  regParam: Double,
-  stepSize: Double,
-  bitPrecision: Int,
-  modelName: String,
-  namespace: String,
-  maxClasses: Int,
-  initialize: Boolean
-) extends Params
+    appName: String,
+    maxIter: Int,
+    regParam: Double,
+    stepSize: Double,
+    bitPrecision: Int,
+    modelName: String,
+    namespace: String,
+    maxClasses: Int,
+    initialize: Boolean) extends Params
 
-case class PageVariantModel(
-  model: Array[Byte],
-  userData: UserData,
-  classes: Classes,
-  testPeriodStarts: TestPeriodStarts,
-  testPeriodEnds: TestPeriodEnds
-)
+case class ContextualBanditModel(
+    model: Array[Byte],
+    userData: UserData,
+    classes: Classes,
+    testPeriodStarts: TestPeriodStarts,
+    testPeriodEnds: TestPeriodEnds )
 
 case class UserData(
-  data: Map[String,PropertyMap]
-)
+    data: Map[String,PropertyMap])
 
 case class Classes(
-  classes: Map[String, Seq[(Int,String)]]
-)
+    classes: Map[String, Seq[(Int,String)]])
 
 case class TestPeriodStarts(
-  testPeriodStarts: Map[String, String]
-)
+    testPeriodStarts: Map[String, String])
 
 case class TestPeriodEnds(
-  testPeriodEnds: Map[String, String]
-)
+    testPeriodEnds: Map[String, String])
 
 
 // extends P2LAlgorithm because VW doesn't contain RDD.
-class VowpalPageVariantRecommenderAlgorithm(val ap: AlgorithmParams)
-  extends P2LAlgorithm[PreparedData, PageVariantModel, Query, PredictedResult] { 
+class ContextualBandit(val ap: AlgorithmParams)
+  extends P2LAlgorithm[PreparedData, ContextualBanditModel, Query, PredictedResult] {
 
   @transient lazy val logger = Logger[this.type]
 
@@ -70,24 +81,24 @@ class VowpalPageVariantRecommenderAlgorithm(val ap: AlgorithmParams)
 
   val ds = new DataSource(DataSourceParams(ap.appName, None))
 
-  def train(sc: SparkContext, data: PreparedData): PageVariantModel = {
-   
+  def train(sc: SparkContext, data: PreparedData): ContextualBanditModel = {
+
   if(!ap.initialize){
      while(true){
        val vw = createVW()
 
        val freshData = ds.readTraining(sc)
        val freshPreparedData = new PreparedData(freshData.trainingExamples, freshData.users, freshData.testGroups)
- 
+
       require(!freshPreparedData.testGroups.take(1).isEmpty,
         s"No test groups found, please initialize test groups")
- 
-      val (classes, testPeriodStarts, testPeriodEnds) = testGroupToClassesAndPeriodBounds(freshPreparedData) 
+
+      val (classes, testPeriodStarts, testPeriodEnds) = testGroupToClassesAndPeriodBounds(freshPreparedData)
 
       val userData = freshPreparedData.users.collect().map( x => x._1 -> x._2).toMap
 
-      trainOnAllHistoricalData(freshPreparedData, classes, userData,vw)  
- 
+      trainOnAllHistoricalData(freshPreparedData, classes, userData,vw)
+
       vw.close()
 
       saveObject(UserData(userData), "userData")
@@ -96,14 +107,14 @@ class VowpalPageVariantRecommenderAlgorithm(val ap: AlgorithmParams)
       saveObject(TestPeriodEnds(testPeriodEnds), "testPeriodEnds")
     }
   }
-    return PageVariantModel(null, null, null, null, null)
+    return ContextualBanditModel(null, null, null, null, null)
   }
 
   private def saveObject(obj: Serializable, name: String){
     val stream = new ObjectOutputStream(new FileOutputStream(name))
     stream.writeObject(obj)
-    stream.close 
-  }  
+    stream.close
+  }
 
   private def readObject[T](name: String): T = {
     val stream = new ObjectInputStream(new FileInputStream(name))
@@ -147,7 +158,7 @@ class VowpalPageVariantRecommenderAlgorithm(val ap: AlgorithmParams)
       val inputs: Seq[String] = data.examples.collect.map { example =>
       val testGroupClasses = classes.getOrElse(example.testGroupId, Seq[(Int, String)]())
 
-      //The magic numbers here are costs: 0.0 in case we see this variant, and it converted, 2.0 if we see it and it didn't convert, and 1.0 if we didn't see it 
+      //The magic numbers here are costs: 0.0 in case we see this variant, and it converted, 2.0 if we see it and it didn't convert, and 1.0 if we didn't see it
       val classString: String = testGroupClasses.map { thisClass => thisClass._1.toString + ":" +
          (if(thisClass._2 == example.variant && example.converted) "0.0" else if(thisClass._2 == example.variant) "2.0" else "1.0") }.mkString(" ")
 
@@ -157,30 +168,30 @@ class VowpalPageVariantRecommenderAlgorithm(val ap: AlgorithmParams)
     return inputs
   }
 
- 
-  def predict(origModel: PageVariantModel, query: Query): PredictedResult = {
 
-    val newModel = PageVariantModel(origModel.model,
-                                    readObject[UserData]("userData"), 
+  def predict(origModel: ContextualBanditModel, query: Query): PredictedResult = {
+
+    val newModel = ContextualBanditModel(origModel.model,
+                                    readObject[UserData]("userData"),
                                     readObject[Classes]("classes"),
                                     readObject[TestPeriodStarts]("testPeriodStarts"),
                                     readObject[TestPeriodEnds]("testPeriodEnds")
-                                   )                        
- 
+                                   )
+
     //println(model.classes)
     //println(model.userData)
 
     val pageVariant = if(newModel.classes.classes isDefinedAt query.testGroupId) getPageVariant(newModel, query) else getDefaultPageVariant(query)
 
     //for (item <- probabilityMap) println(item)
-  
+
     val result = new PredictedResult(pageVariant, query.testGroupId)
-   
+
     result
   }
 
 
-  def getPageVariant(model: PageVariantModel, query: Query): String = {
+  def getPageVariant(model: ContextualBanditModel, query: Query): String = {
      val vw = new VW(" -i " + ap.modelName)
 
     val numClasses = model.classes.classes(query.testGroupId).size
@@ -248,7 +259,6 @@ class VowpalPageVariantRecommenderAlgorithm(val ap: AlgorithmParams)
     item
   }
 
-
   def rawTextToVWFormattedString(str: String) : String = {
      //VW input cannot contain these characters 
      str.replaceAll("[|:]", "")
@@ -258,11 +268,16 @@ class VowpalPageVariantRecommenderAlgorithm(val ap: AlgorithmParams)
      vec.toArray.zipWithIndex.map{ case (dbl, int) => s"$int:$dbl"} mkString " "
   }
 
-  def constructVWString(classString: String, user: String, testGroupId: String, userProps: Map[String,PropertyMap]): String = {
-      @transient implicit lazy val formats = org.json4s.DefaultFormats
+  def constructVWString(classString: String, user: String, testGroupId: String, userProps: Map[String,PropertyMap]):
+    String = {
+    @transient implicit lazy val formats = org.json4s.DefaultFormats
 
-     classString + " |" +  ap.namespace + " " + rawTextToVWFormattedString("user_" + user + " " + "testGroupId_" + testGroupId + " " + (userProps.getOrElse(user, PropertyMap(Map[String,JValue](), new DateTime(), new DateTime())) -- List("converted", "testGroupId")).fields.map { entry =>
-          entry._1 + "_" + entry._2.extract[String].replaceAll("\\s+","_") + "_" + testGroupId }.mkString(" "))
-}
+    classString + " |" +  ap.namespace + " " + rawTextToVWFormattedString("user_" + user + " " + "testGroupId_" +
+      testGroupId + " " + (userProps.getOrElse(user, PropertyMap(Map[String,JValue](), new DateTime(),
+      new DateTime())) --
+      List("converted", "testGroupId")).fields.map { entry =>
+          entry._1 + "_" + entry._2.extract[String].replaceAll("\\s+","_") + "_" + testGroupId
+      }.mkString(" "))
+  }
 
 }
