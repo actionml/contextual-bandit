@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.template.classification
+package org.actionml.templates.cb
 
 import org.apache.predictionio.controller.P2LAlgorithm
 import org.apache.predictionio.controller.Params

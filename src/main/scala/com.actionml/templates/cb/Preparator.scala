@@ -15,16 +15,25 @@
  * limitations under the License.
  */
 
-package org.template.classification
+package org.actionml.templates.cb
 
-import org.apache.predictionio.controller.Evaluation
-import org.apache.predictionio.controller.MetricEvaluator
+import org.apache.predictionio.controller.PPreparator
+import org.apache.predictionio.data.storage.PropertyMap
 
-object CompleteEvaluation extends Evaluation {
-  engineEvaluator = (
-    ClassificationEngine(),
-    MetricEvaluator(
-      metric = Accuracy(),
-      otherMetrics = Seq(Precision(0.0), Precision(1.0), Precision(2.0)),
-      outputPath = "best.json"))
+import org.apache.spark.SparkContext
+import org.apache.spark.SparkContext._
+import org.apache.spark.rdd.RDD
+
+
+class PreparedData(
+  val examples: RDD[VisitorVariantExample],
+  val users: RDD[(String, PropertyMap)],
+  val testGroups: RDD[(String, PropertyMap)]
+) extends Serializable
+
+class Preparator extends PPreparator[TrainingData, PreparedData] {
+
+  def prepare(sc: SparkContext, trainingData: TrainingData): PreparedData = {
+    new PreparedData(trainingData.trainingExamples, trainingData.users, trainingData.testGroups)
+  }
 }
