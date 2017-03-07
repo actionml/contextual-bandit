@@ -2,9 +2,15 @@ import AssemblyKeys._
 
 assemblySettings
 
-name := "template-scala-page-variant-recommender"
+name := "contextual-bandit"
 
-organization := "io.prediction"
+version := "0.3.0"
+
+organization := "com.actionml"
+
+val pioVersion = "0.11.0-SNAPSHOT"
+
+val sparkVersion = "1.6.3"
 
 resolvers += Resolver.sonatypeRepo("snapshots")   
 
@@ -12,8 +18,8 @@ libraryDependencies ++= {
    val artifact = "vw-jni"
    val osName = if(sys.props("os.name")=="Mac OS X") "mac" else "Linux"
    Seq(
-  "org.apache.predictionio"    %% "core"          % "0.10.0-SNAPSHOT" % "provided",
-  "org.apache.spark" %% "spark-core"    % "1.3.0" % "provided",
-  "org.apache.spark" %% "spark-mllib"   % "1.3.0" % "provided",
+  "org.apache.predictionio"    %% "core"          % pioVersion % "provided",
+  "org.apache.spark" %% "spark-core"    % sparkVersion % "provided",
+  "org.apache.spark" %% "spark-mllib"   % sparkVersion % "provided",
   "com.github.johnlangford" % artifact % "8.0.0")
 }

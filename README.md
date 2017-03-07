@@ -143,7 +143,7 @@ The Page Variant Recommender has a configuration file called engine.json in the 
   {
   "id": "default",
   "description": "Default settings",
-  "engineFactory": "org.template.pagevariant.PageVariantRecommenderEngine",
+  "engineFactory": "com.actionml.pagevariant.PageVariantRecommenderEngine",
   "datasource": {
     "params": {
       "appName": "PageVariant",
