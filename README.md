@@ -75,7 +75,7 @@ http://localhost:7070/batch/events.json
 ]
 ```
 
-#Initialize a group
+#Initialize and Delete a group
 
 The system needs to  know what items can be recommended for each group in advance. The algorithm cold-starts by recommending at random from these items until conversions are seen, then it will converge of the best recommendations based on these and the user + context that seems to prefer an item. That means the group must be initialized before the system is ready to respond to queries.
 
@@ -97,7 +97,20 @@ Note that once the testPeriod has elapsed, that the recommender will then be det
 
 You can also reset a group to start training over. You can update the testPeriodStart and testPeriodEnd properties by using another $set just like above. However do not update the items or you may see undesirable results. 
 
-In you wish to create another test with different items, define a new group-id.
+If you wish to create another test with different items, define a new group-id.
+
+To remove a test group and all it's data use a $delete event:
+
+```
+{
+    "event":"$delete",
+    "entityType":"group",
+    "entityId":"group-1",
+    "properties":{},
+    "eventTime":"2016-08-11T10:15:02.235+05:30",
+    "creationTime":"2016-08-11T04:47:14.281Z"
+}
+```
 
 # Usage Events/Indicators
 
